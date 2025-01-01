@@ -15,8 +15,6 @@ export class GameController {
   private readonly engine: Engine;
   private readonly scene: Scene;
   private readonly camera: Camera;
-  private readonly render: () => void;
-  private readonly resize: () => void;
 
   constructor({ canvas }: IProps) {
     this.engine = new Engine(canvas, true, {
@@ -28,10 +26,6 @@ export class GameController {
     this.scene = new Scene(this.engine);
 
     this.camera = new Camera({ canvas, scene: this.scene });
-
-    this.render = () => this.scene.render();
-
-    this.resize = () => this.engine.resize();
   }
 
   public start() {
@@ -49,6 +43,9 @@ export class GameController {
     this.camera.unmount();
   }
 
+  render = () => this.scene.render();
+  resize = () => this.engine.resize();
+
   private fillScene() {
     this.initGround();
   }
@@ -61,7 +58,7 @@ export class GameController {
     const light = new HemisphericLight(
       "light",
       new Vector3(0, 1, 0),
-      this.scene
+      this.scene,
     );
     light.intensity = 0.7;
   }

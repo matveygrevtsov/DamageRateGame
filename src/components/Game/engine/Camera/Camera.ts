@@ -14,6 +14,7 @@ import {
   MAX_RADIUS,
   MIN_RADIUS,
   SHOW_TARGET,
+  WINDOW_PADDING_PX,
 } from "./constants";
 
 interface IProps {
@@ -35,7 +36,7 @@ export class Camera {
       BETA_ROTATION_ANGLE,
       DEFAULT_RADIUS,
       Vector3.Zero(),
-      scene
+      scene,
     );
     this.camera.attachControl(canvas, true);
 
@@ -48,12 +49,18 @@ export class Camera {
     }
     this.camera.setTarget(this.target);
 
-    this.initRotationHandler();
-
     this.initLimits();
+    this.initHandlers();
   }
 
-  public unmount() {}
+  public unmount() {
+    window.removeEventListener("mousemove", this.mouseMoveHandler);
+  }
+
+  private initHandlers() {
+    this.initRotationHandler();
+    window.addEventListener("mousemove", this.mouseMoveHandler);
+  }
 
   private initRotationHandler() {
     const { scene, camera } = this;
@@ -68,4 +75,63 @@ export class Camera {
     this.camera.lowerRadiusLimit = MIN_RADIUS;
     this.camera.upperRadiusLimit = MAX_RADIUS;
   }
+
+  mouseMoveHandler = (mouseEvent: MouseEvent) => {
+    const halfWidth = window.innerWidth / 2;
+    const halfHeight = window.innerHeight / 2;
+    const x = mouseEvent.x - halfWidth;
+    const y = halfHeight - mouseEvent.y;
+
+    if (y >= halfHeight - WINDOW_PADDING_PX) {
+      if (x < WINDOW_PADDING_PX - halfWidth) {
+        console.log("северо-запад");
+        return;
+      }
+
+      if (Math.abs(x) < halfWidth - WINDOW_PADDING_PX) {
+        console.log("север");
+        return;
+      }
+
+      if (x > halfWidth - WINDOW_PADDING_PX) {
+        console.log("северо-восток");
+        return;
+      }
+
+      return;
+    }
+
+    if (Math.abs(y) < halfHeight - WINDOW_PADDING_PX) {
+      if (x < WINDOW_PADDING_PX - halfWidth) {
+        console.log("запад");
+        return;
+      }
+
+      if (x > halfWidth - WINDOW_PADDING_PX) {
+        console.log("восток");
+        return;
+      }
+
+      return;
+    }
+
+    if (y <= WINDOW_PADDING_PX - halfHeight) {
+      if (x < WINDOW_PADDING_PX - halfWidth) {
+        console.log("юго-запад");
+        return;
+      }
+
+      if (Math.abs(x) < halfWidth - WINDOW_PADDING_PX) {
+        console.log("юг");
+        return;
+      }
+
+      if (x > halfWidth - WINDOW_PADDING_PX) {
+        console.log("юго-восток");
+        return;
+      }
+
+      return;
+    }
+  };
 }
