@@ -1,26 +1,24 @@
 import {
-  ArcRotateCamera,
   Engine,
   HemisphericLight,
   MeshBuilder,
   Scene,
   Vector3,
 } from "@babylonjs/core";
+import { Camera } from "./Camera/Camera";
 
 interface IProps {
   canvas: HTMLCanvasElement;
 }
 
 export class GameController {
-  private readonly canvas: HTMLCanvasElement;
   private readonly engine: Engine;
   private readonly scene: Scene;
+  private readonly camera: Camera;
   private readonly render: () => void;
   private readonly resize: () => void;
 
   constructor({ canvas }: IProps) {
-    this.canvas = canvas;
-
     this.engine = new Engine(canvas, true, {
       preserveDrawingBuffer: true,
       stencil: true,
@@ -28,6 +26,8 @@ export class GameController {
     });
 
     this.scene = new Scene(this.engine);
+
+    this.camera = new Camera({ canvas, scene: this.scene });
 
     this.render = () => this.scene.render();
 
@@ -37,7 +37,6 @@ export class GameController {
   public start() {
     window.addEventListener("resize", this.resize);
     this.fillScene();
-    this.initCamera();
     this.initLight();
     this.engine.runRenderLoop(this.render);
   }
@@ -47,6 +46,7 @@ export class GameController {
     this.engine.stopRenderLoop(this.render);
     this.scene.dispose();
     this.engine.dispose();
+    this.camera.unmount();
   }
 
   private fillScene() {
@@ -57,24 +57,11 @@ export class GameController {
     MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, this.scene);
   }
 
-  private initCamera() {
-    const camera = new ArcRotateCamera(
-      "Camera",
-      -Math.PI / 2,
-      Math.PI / 4,
-      15,
-      Vector3.Zero(),
-      this.scene,
-    );
-
-    camera.attachControl(this.canvas, true);
-  }
-
   private initLight() {
     const light = new HemisphericLight(
       "light",
       new Vector3(0, 1, 0),
-      this.scene,
+      this.scene
     );
     light.intensity = 0.7;
   }
