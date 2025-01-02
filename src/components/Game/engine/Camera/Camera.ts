@@ -6,11 +6,12 @@ import {
   MeshBuilder,
   StandardMaterial,
   Color3,
+  KeyboardInfo,
+  KeyboardEventTypes,
 } from "@babylonjs/core";
 import {
-  ALPHA_ROTATION_ANGLE,
   BETA_ROTATION_ANGLE,
-  DEFAULT_DIRECTION_VECTOR,
+  CAMERA_ROTATION_GRADATIONS,
   DEFAULT_RADIUS,
   MAX_RADIUS,
   MIN_RADIUS,
@@ -29,13 +30,16 @@ export class Camera {
   private readonly camera: ArcRotateCamera;
   private readonly target: Mesh;
   private readonly movementVector: Vector3;
+  private rotationGradationIndex: number;
 
   constructor({ canvas, scene }: IProps) {
     this.scene = scene;
 
+    this.rotationGradationIndex = 0;
+
     this.camera = new ArcRotateCamera(
       "Camera",
-      ALPHA_ROTATION_ANGLE,
+      CAMERA_ROTATION_GRADATIONS[this.rotationGradationIndex],
       BETA_ROTATION_ANGLE,
       DEFAULT_RADIUS,
       Vector3.Zero(),
@@ -63,19 +67,14 @@ export class Camera {
   }
 
   private initHandlers() {
-    this.initRotationHandler();
     window.addEventListener("mousemove", this.mouseMoveHandler);
     // Данный обработчик срабатывает на каждый кадр.
     this.scene.onBeforeRenderObservable.add(this.sceneTickHandler);
-  }
 
-  private initRotationHandler() {
-    const { scene, camera } = this;
+    // Данный обработчик срабатывает при нажатии на любую клавишу клавиатуры.
+    this.scene.onKeyboardObservable.add(this.keyboardHandler);
 
-    scene.registerBeforeRender(function () {
-      camera.alpha = ALPHA_ROTATION_ANGLE;
-      camera.beta = BETA_ROTATION_ANGLE;
-    });
+    this.scene.registerBeforeRender(this.rotationHandler);
   }
 
   private initLimits() {
@@ -86,31 +85,30 @@ export class Camera {
   mouseMoveHandler = ({ x, y }: MouseEvent) => {
     this.movementVector.copyFrom(Vector3.Zero());
 
+    const directionVectorX = -Math.cos(this.camera.alpha);
+    const directionVectorZ = -Math.sin(this.camera.alpha);
+
     if (y <= WINDOW_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(DEFAULT_DIRECTION_VECTOR.x, 0, DEFAULT_DIRECTION_VECTOR.z),
+        new Vector3(directionVectorX, 0, directionVectorZ),
       );
     }
 
     if (y >= window.innerHeight - WINDOW_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(
-          -DEFAULT_DIRECTION_VECTOR.x,
-          0,
-          -DEFAULT_DIRECTION_VECTOR.z,
-        ),
+        new Vector3(-directionVectorX, 0, -directionVectorZ),
       );
     }
 
     if (x <= WINDOW_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(-DEFAULT_DIRECTION_VECTOR.z, 0, DEFAULT_DIRECTION_VECTOR.x),
+        new Vector3(-directionVectorZ, 0, directionVectorX),
       );
     }
 
     if (x >= window.innerWidth - WINDOW_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(DEFAULT_DIRECTION_VECTOR.z, 0, -DEFAULT_DIRECTION_VECTOR.x),
+        new Vector3(directionVectorZ, 0, -directionVectorX),
       );
     }
 
@@ -142,5 +140,21 @@ export class Camera {
     if (target.position.z < -groundHalfHeight) {
       target.position.z = -groundHalfHeight;
     }
+  };
+
+  keyboardHandler = (keyboardInfo: KeyboardInfo) => {
+    if (
+      keyboardInfo.type === KeyboardEventTypes.KEYDOWN &&
+      keyboardInfo.event.code === "KeyE"
+    ) {
+      this.rotationGradationIndex =
+        (this.rotationGradationIndex + 1) % CAMERA_ROTATION_GRADATIONS.length;
+    }
+  };
+
+  rotationHandler = () => {
+    const { camera, rotationGradationIndex } = this;
+    camera.alpha = CAMERA_ROTATION_GRADATIONS[rotationGradationIndex];
+    camera.beta = BETA_ROTATION_ANGLE;
   };
 }
