@@ -21,7 +21,6 @@ export class GameController {
     this.engine = new Engine(canvas, true, {
       preserveDrawingBuffer: true,
       stencil: true,
-      disableWebGL2Support: false,
     });
 
     this.scene = new Scene(this.engine);
