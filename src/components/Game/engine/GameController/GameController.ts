@@ -13,19 +13,15 @@ interface IProps {
 }
 
 export class GameController {
+  private readonly canvas: HTMLCanvasElement;
   private readonly engine: Engine;
   private readonly scene: Scene;
-  private readonly camera: Camera;
 
   constructor({ canvas }: IProps) {
-    this.engine = new Engine(canvas, true, {
-      preserveDrawingBuffer: true,
-      stencil: true,
-    });
-
+    this.canvas = canvas;
+    this.engine = this.createEngine();
     this.scene = new Scene(this.engine);
-
-    this.camera = new Camera({ canvas, scene: this.scene });
+    new Camera({ canvas, scene: this.scene });
   }
 
   public start() {
@@ -40,7 +36,15 @@ export class GameController {
     this.engine.stopRenderLoop(this.render);
     this.scene.dispose();
     this.engine.dispose();
-    this.camera.unmount();
+  }
+
+  private createEngine() {
+    const { canvas } = this;
+    const engine = new Engine(canvas, true, {
+      preserveDrawingBuffer: true,
+      stencil: true,
+    });
+    return engine;
   }
 
   private fillScene() {
