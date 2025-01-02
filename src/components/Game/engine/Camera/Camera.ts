@@ -18,6 +18,8 @@ import {
   MIN_RADIUS,
   SHOW_TARGET,
   CANVAS_PADDING_PX,
+  ROTATION_ANIMATION_DURATION_MS,
+  ALPHA_DELTA,
 } from "./constants";
 import { GROUND_HEIGHT, GROUND_WIDTH } from "../GameController/constants";
 
@@ -32,7 +34,10 @@ export class Camera {
   private readonly scene: Scene;
   private readonly target: Mesh;
   private readonly movementVector: Vector3;
+  private mouseX: number;
+  private mouseY: number;
   private rotationGradationIndex: number;
+  private rotationAnimationStartTimeMs?: number;
 
   constructor({ canvas, scene }: IProps) {
     this.canvas = canvas;
@@ -41,6 +46,8 @@ export class Camera {
     this.camera = this.createCamera();
     this.target = this.createTarget();
     this.movementVector = Vector3.Zero();
+    this.mouseX = 0;
+    this.mouseY = 0;
     this.initHandlers();
   }
 
@@ -74,56 +81,48 @@ export class Camera {
   }
 
   private initHandlers() {
-    const {
-      scene,
-      sceneTickHandler,
-      keyboardHandler,
-      rotationHandler,
-      mouseMoveHandler,
-    } = this;
+    const { scene, sceneTickHandler, keyboardHandler, mouseMoveHandler } = this;
     scene.onBeforeRenderObservable.add(sceneTickHandler);
     scene.onKeyboardObservable.add(keyboardHandler);
-    scene.registerBeforeRender(rotationHandler);
     scene.onPointerObservable.add(mouseMoveHandler);
   }
 
-  mouseMoveHandler = (pointerInfo: PointerInfo) => {
-    this.movementVector.copyFrom(Vector3.Zero());
+  private refreshMovementVectorByMouseCoordinates() {
+    const { mouseX, mouseY } = this;
 
-    const x = pointerInfo.event.clientX;
-    const y = pointerInfo.event.clientY;
+    this.movementVector.copyFrom(Vector3.Zero());
 
     const directionVectorX = -Math.cos(this.camera.alpha);
     const directionVectorZ = -Math.sin(this.camera.alpha);
 
-    if (y <= CANVAS_PADDING_PX) {
+    if (mouseY <= CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
         new Vector3(directionVectorX, 0, directionVectorZ),
       );
     }
 
-    if (y >= this.canvas.height - CANVAS_PADDING_PX) {
+    if (mouseY >= this.canvas.height - CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
         new Vector3(-directionVectorX, 0, -directionVectorZ),
       );
     }
 
-    if (x <= CANVAS_PADDING_PX) {
+    if (mouseX <= CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
         new Vector3(-directionVectorZ, 0, directionVectorX),
       );
     }
 
-    if (x >= this.canvas.width - CANVAS_PADDING_PX) {
+    if (mouseX >= this.canvas.width - CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
         new Vector3(directionVectorZ, 0, -directionVectorX),
       );
     }
 
     this.movementVector.normalize();
-  };
+  }
 
-  sceneTickHandler = () => {
+  private refreshTargetPositionByMovementVector() {
     const { scene, target, movementVector } = this;
     if (!movementVector.length() || !scene.deltaTime) {
       return;
@@ -148,21 +147,51 @@ export class Camera {
     if (target.position.z < -groundHalfHeight) {
       target.position.z = -groundHalfHeight;
     }
+  }
+
+  private refreshRotation() {
+    const { camera, rotationGradationIndex, rotationAnimationStartTimeMs } =
+      this;
+
+    if (rotationAnimationStartTimeMs === undefined) {
+      camera.alpha = CAMERA_ROTATION_GRADATIONS[rotationGradationIndex];
+      camera.beta = BETA_ROTATION_ANGLE;
+      return;
+    }
+
+    const animationProgressMs = Date.now() - rotationAnimationStartTimeMs;
+    const nextRotationGradationIndex =
+      (rotationGradationIndex + 1) % CAMERA_ROTATION_GRADATIONS.length;
+
+    if (animationProgressMs >= ROTATION_ANIMATION_DURATION_MS) {
+      this.rotationAnimationStartTimeMs = undefined;
+      this.rotationGradationIndex = nextRotationGradationIndex;
+      return;
+    }
+
+    camera.alpha =
+      (ALPHA_DELTA / ROTATION_ANIMATION_DURATION_MS) * animationProgressMs +
+      CAMERA_ROTATION_GRADATIONS[rotationGradationIndex];
+  }
+
+  sceneTickHandler = () => {
+    this.refreshMovementVectorByMouseCoordinates();
+    this.refreshTargetPositionByMovementVector();
+    this.refreshRotation();
   };
 
   keyboardHandler = (keyboardInfo: KeyboardInfo) => {
     if (
       keyboardInfo.type === KeyboardEventTypes.KEYDOWN &&
-      keyboardInfo.event.code === "KeyE"
+      keyboardInfo.event.code === "KeyE" &&
+      this.rotationAnimationStartTimeMs === undefined
     ) {
-      this.rotationGradationIndex =
-        (this.rotationGradationIndex + 1) % CAMERA_ROTATION_GRADATIONS.length;
+      this.rotationAnimationStartTimeMs = Date.now();
     }
   };
 
-  rotationHandler = () => {
-    const { camera, rotationGradationIndex } = this;
-    camera.alpha = CAMERA_ROTATION_GRADATIONS[rotationGradationIndex];
-    camera.beta = BETA_ROTATION_ANGLE;
+  mouseMoveHandler = (pointerInfo: PointerInfo) => {
+    this.mouseX = pointerInfo.event.clientX;
+    this.mouseY = pointerInfo.event.clientY;
   };
 }
