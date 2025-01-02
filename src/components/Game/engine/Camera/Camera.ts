@@ -23,12 +23,6 @@ import {
 } from "./constants";
 import { GROUND_HEIGHT, GROUND_WIDTH } from "../GameController/constants";
 
-interface IRotationAnimation {
-  startTimeMs: number;
-  startAngle: number;
-  finishAngle: number;
-}
-
 interface IProps {
   canvas: HTMLCanvasElement;
   scene: Scene;
@@ -61,7 +55,7 @@ export class Camera {
       BETA_ROTATION_ANGLE,
       DEFAULT_RADIUS,
       Vector3.Zero(),
-      scene
+      scene,
     );
     camera.attachControl(canvas, true);
     camera.lowerRadiusLimit = MIN_RADIUS;
@@ -139,25 +133,25 @@ export class Camera {
 
     if (y <= CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(directionVectorX, 0, directionVectorZ)
+        new Vector3(directionVectorX, 0, directionVectorZ),
       );
     }
 
     if (y >= this.canvas.height - CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(-directionVectorX, 0, -directionVectorZ)
+        new Vector3(-directionVectorX, 0, -directionVectorZ),
       );
     }
 
     if (x <= CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(-directionVectorZ, 0, directionVectorX)
+        new Vector3(-directionVectorZ, 0, directionVectorX),
       );
     }
 
     if (x >= this.canvas.width - CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(directionVectorZ, 0, -directionVectorX)
+        new Vector3(directionVectorZ, 0, -directionVectorX),
       );
     }
 
@@ -199,8 +193,7 @@ export class Camera {
     }
 
     camera.alpha =
-      (ALPHA_DELTA / ROTATION_ANIMATION_DURATION_MS) *
-        (animationProgressMs - rotationAnimationStartTimeMs) +
+      (ALPHA_DELTA / ROTATION_ANIMATION_DURATION_MS) * animationProgressMs +
       CAMERA_ROTATION_GRADATIONS[rotationGradationIndex];
   };
 }
