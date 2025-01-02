@@ -10,12 +10,14 @@ import {
 import {
   ALPHA_ROTATION_ANGLE,
   BETA_ROTATION_ANGLE,
+  DEFAULT_DIRECTION_VECTOR,
   DEFAULT_RADIUS,
   MAX_RADIUS,
   MIN_RADIUS,
   SHOW_TARGET,
   WINDOW_PADDING_PX,
 } from "./constants";
+import { GROUND_HEIGHT, GROUND_WIDTH } from "../GameController/constants";
 
 interface IProps {
   canvas: HTMLCanvasElement;
@@ -26,6 +28,7 @@ export class Camera {
   private readonly scene: Scene;
   private readonly camera: ArcRotateCamera;
   private readonly target: Mesh;
+  private readonly movementVector: Vector3;
 
   constructor({ canvas, scene }: IProps) {
     this.scene = scene;
@@ -49,6 +52,8 @@ export class Camera {
     }
     this.camera.setTarget(this.target);
 
+    this.movementVector = Vector3.Zero();
+
     this.initLimits();
     this.initHandlers();
   }
@@ -60,6 +65,8 @@ export class Camera {
   private initHandlers() {
     this.initRotationHandler();
     window.addEventListener("mousemove", this.mouseMoveHandler);
+    // Данный обработчик срабатывает на каждый кадр.
+    this.scene.onBeforeRenderObservable.add(this.sceneTickHandler);
   }
 
   private initRotationHandler() {
@@ -76,62 +83,64 @@ export class Camera {
     this.camera.upperRadiusLimit = MAX_RADIUS;
   }
 
-  mouseMoveHandler = (mouseEvent: MouseEvent) => {
-    const halfWidth = window.innerWidth / 2;
-    const halfHeight = window.innerHeight / 2;
-    const x = mouseEvent.x - halfWidth;
-    const y = halfHeight - mouseEvent.y;
+  mouseMoveHandler = ({ x, y }: MouseEvent) => {
+    this.movementVector.copyFrom(Vector3.Zero());
 
-    if (y >= halfHeight - WINDOW_PADDING_PX) {
-      if (x < WINDOW_PADDING_PX - halfWidth) {
-        console.log("северо-запад");
-        return;
-      }
-
-      if (Math.abs(x) < halfWidth - WINDOW_PADDING_PX) {
-        console.log("север");
-        return;
-      }
-
-      if (x > halfWidth - WINDOW_PADDING_PX) {
-        console.log("северо-восток");
-        return;
-      }
-
-      return;
+    if (y <= WINDOW_PADDING_PX) {
+      this.movementVector.addInPlace(
+        new Vector3(DEFAULT_DIRECTION_VECTOR.x, 0, DEFAULT_DIRECTION_VECTOR.z),
+      );
     }
 
-    if (Math.abs(y) < halfHeight - WINDOW_PADDING_PX) {
-      if (x < WINDOW_PADDING_PX - halfWidth) {
-        console.log("запад");
-        return;
-      }
-
-      if (x > halfWidth - WINDOW_PADDING_PX) {
-        console.log("восток");
-        return;
-      }
-
-      return;
+    if (y >= window.innerHeight - WINDOW_PADDING_PX) {
+      this.movementVector.addInPlace(
+        new Vector3(
+          -DEFAULT_DIRECTION_VECTOR.x,
+          0,
+          -DEFAULT_DIRECTION_VECTOR.z,
+        ),
+      );
     }
 
-    if (y <= WINDOW_PADDING_PX - halfHeight) {
-      if (x < WINDOW_PADDING_PX - halfWidth) {
-        console.log("юго-запад");
-        return;
-      }
+    if (x <= WINDOW_PADDING_PX) {
+      this.movementVector.addInPlace(
+        new Vector3(-DEFAULT_DIRECTION_VECTOR.z, 0, DEFAULT_DIRECTION_VECTOR.x),
+      );
+    }
 
-      if (Math.abs(x) < halfWidth - WINDOW_PADDING_PX) {
-        console.log("юг");
-        return;
-      }
+    if (x >= window.innerWidth - WINDOW_PADDING_PX) {
+      this.movementVector.addInPlace(
+        new Vector3(DEFAULT_DIRECTION_VECTOR.z, 0, -DEFAULT_DIRECTION_VECTOR.x),
+      );
+    }
 
-      if (x > halfWidth - WINDOW_PADDING_PX) {
-        console.log("юго-восток");
-        return;
-      }
+    this.movementVector.normalize();
+  };
 
+  sceneTickHandler = () => {
+    const { scene, target, movementVector } = this;
+    if (!movementVector.length() || !scene.deltaTime) {
       return;
+    }
+    const speed = (scene.deltaTime / 1000) * 4;
+    const groundHalfWidth = GROUND_WIDTH / 2;
+    const groundHalfHeight = GROUND_HEIGHT / 2;
+    target.position.addInPlace(movementVector.scale(speed));
+
+    if (target.position.x > groundHalfWidth) {
+      target.position.x = groundHalfWidth;
+    }
+
+    if (target.position.x < -groundHalfWidth) {
+      target.position.x = -groundHalfWidth;
+    }
+
+    if (target.position.z > groundHalfHeight) {
+      target.position.z = groundHalfHeight;
+    }
+
+    if (target.position.z < -groundHalfHeight) {
+      target.position.z = -groundHalfHeight;
     }
   };
 }

@@ -5,7 +5,8 @@ import {
   Scene,
   Vector3,
 } from "@babylonjs/core";
-import { Camera } from "./Camera/Camera";
+import { GROUND_HEIGHT, GROUND_WIDTH } from "./constants";
+import { Camera } from "../Camera/Camera";
 
 interface IProps {
   canvas: HTMLCanvasElement;
@@ -43,15 +44,16 @@ export class GameController {
     this.camera.unmount();
   }
 
-  render = () => this.scene.render();
-  resize = () => this.engine.resize();
-
   private fillScene() {
     this.initGround();
   }
 
   private initGround() {
-    MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, this.scene);
+    MeshBuilder.CreateGround(
+      "ground",
+      { width: GROUND_WIDTH, height: GROUND_HEIGHT },
+      this.scene,
+    );
   }
 
   private initLight() {
@@ -62,4 +64,7 @@ export class GameController {
     );
     light.intensity = 0.7;
   }
+
+  render = () => this.scene.render();
+  resize = () => this.engine.resize();
 }

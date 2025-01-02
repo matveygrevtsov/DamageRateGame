@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Root, Canvas } from "./styles";
-import { GameController } from "./engine/GameController";
+import { GameController } from "./engine/GameController/GameController";
 
 export const Game = () => {
   const ref = useRef<HTMLCanvasElement>(null);
