@@ -1,26 +1,23 @@
 import {
-  ArcRotateCamera,
   Engine,
   HemisphericLight,
   MeshBuilder,
   Scene,
   Vector3,
 } from "@babylonjs/core";
+import { GROUND_HEIGHT, GROUND_WIDTH } from "./constants";
+import { Camera } from "../Camera/Camera";
 
 interface IProps {
   canvas: HTMLCanvasElement;
 }
 
 export class GameController {
-  private readonly canvas: HTMLCanvasElement;
   private readonly engine: Engine;
   private readonly scene: Scene;
-  private readonly render: () => void;
-  private readonly resize: () => void;
+  private readonly camera: Camera;
 
   constructor({ canvas }: IProps) {
-    this.canvas = canvas;
-
     this.engine = new Engine(canvas, true, {
       preserveDrawingBuffer: true,
       stencil: true,
@@ -29,15 +26,12 @@ export class GameController {
 
     this.scene = new Scene(this.engine);
 
-    this.render = () => this.scene.render();
-
-    this.resize = () => this.engine.resize();
+    this.camera = new Camera({ canvas, scene: this.scene });
   }
 
   public start() {
     window.addEventListener("resize", this.resize);
     this.fillScene();
-    this.initCamera();
     this.initLight();
     this.engine.runRenderLoop(this.render);
   }
@@ -47,6 +41,7 @@ export class GameController {
     this.engine.stopRenderLoop(this.render);
     this.scene.dispose();
     this.engine.dispose();
+    this.camera.unmount();
   }
 
   private fillScene() {
@@ -54,20 +49,11 @@ export class GameController {
   }
 
   private initGround() {
-    MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, this.scene);
-  }
-
-  private initCamera() {
-    const camera = new ArcRotateCamera(
-      "Camera",
-      -Math.PI / 2,
-      Math.PI / 4,
-      15,
-      Vector3.Zero(),
+    MeshBuilder.CreateGround(
+      "ground",
+      { width: GROUND_WIDTH, height: GROUND_HEIGHT },
       this.scene,
     );
-
-    camera.attachControl(this.canvas, true);
   }
 
   private initLight() {
@@ -78,4 +64,7 @@ export class GameController {
     );
     light.intensity = 0.7;
   }
+
+  render = () => this.scene.render();
+  resize = () => this.engine.resize();
 }
