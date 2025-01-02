@@ -8,6 +8,7 @@ import {
   Color3,
   KeyboardInfo,
   KeyboardEventTypes,
+  PointerInfo,
 } from "@babylonjs/core";
 import {
   BETA_ROTATION_ANGLE,
@@ -16,7 +17,7 @@ import {
   MAX_RADIUS,
   MIN_RADIUS,
   SHOW_TARGET,
-  WINDOW_PADDING_PX,
+  CANVAS_PADDING_PX,
 } from "./constants";
 import { GROUND_HEIGHT, GROUND_WIDTH } from "../GameController/constants";
 
@@ -26,87 +27,94 @@ interface IProps {
 }
 
 export class Camera {
-  private readonly scene: Scene;
   private readonly camera: ArcRotateCamera;
+  private readonly canvas: HTMLCanvasElement;
+  private readonly scene: Scene;
   private readonly target: Mesh;
   private readonly movementVector: Vector3;
   private rotationGradationIndex: number;
 
   constructor({ canvas, scene }: IProps) {
+    this.canvas = canvas;
     this.scene = scene;
-
     this.rotationGradationIndex = 0;
+    this.camera = this.createCamera();
+    this.target = this.createTarget();
+    this.movementVector = Vector3.Zero();
+    this.initHandlers();
+  }
 
-    this.camera = new ArcRotateCamera(
+  private createCamera() {
+    const { scene, canvas, rotationGradationIndex } = this;
+    const camera = new ArcRotateCamera(
       "Camera",
-      CAMERA_ROTATION_GRADATIONS[this.rotationGradationIndex],
+      CAMERA_ROTATION_GRADATIONS[rotationGradationIndex],
       BETA_ROTATION_ANGLE,
       DEFAULT_RADIUS,
       Vector3.Zero(),
       scene,
     );
-    this.camera.attachControl(canvas, true);
-
-    this.target = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
-    const redMaterial = new StandardMaterial("redMaterial", scene);
-    redMaterial.diffuseColor = new Color3(1, 0, 0); // Красный цвет
-    this.target.material = redMaterial;
-    if (!SHOW_TARGET) {
-      this.target.isVisible = false;
-    }
-    this.camera.setTarget(this.target);
-
-    this.movementVector = Vector3.Zero();
-
-    this.initLimits();
-    this.initHandlers();
+    camera.attachControl(canvas, true);
+    camera.lowerRadiusLimit = MIN_RADIUS;
+    camera.upperRadiusLimit = MAX_RADIUS;
+    return camera;
   }
 
-  public unmount() {
-    window.removeEventListener("mousemove", this.mouseMoveHandler);
+  private createTarget() {
+    const { scene, camera } = this;
+    const target = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
+    const redMaterial = new StandardMaterial("redMaterial", scene);
+    redMaterial.diffuseColor = new Color3(1, 0, 0); // Красный цвет
+    target.material = redMaterial;
+    if (!SHOW_TARGET) {
+      target.isVisible = false;
+    }
+    camera.setTarget(target);
+    return target;
   }
 
   private initHandlers() {
-    window.addEventListener("mousemove", this.mouseMoveHandler);
-    // Данный обработчик срабатывает на каждый кадр.
-    this.scene.onBeforeRenderObservable.add(this.sceneTickHandler);
-
-    // Данный обработчик срабатывает при нажатии на любую клавишу клавиатуры.
-    this.scene.onKeyboardObservable.add(this.keyboardHandler);
-
-    this.scene.registerBeforeRender(this.rotationHandler);
+    const {
+      scene,
+      sceneTickHandler,
+      keyboardHandler,
+      rotationHandler,
+      mouseMoveHandler,
+    } = this;
+    scene.onBeforeRenderObservable.add(sceneTickHandler);
+    scene.onKeyboardObservable.add(keyboardHandler);
+    scene.registerBeforeRender(rotationHandler);
+    scene.onPointerObservable.add(mouseMoveHandler);
   }
 
-  private initLimits() {
-    this.camera.lowerRadiusLimit = MIN_RADIUS;
-    this.camera.upperRadiusLimit = MAX_RADIUS;
-  }
-
-  mouseMoveHandler = ({ x, y }: MouseEvent) => {
+  mouseMoveHandler = (pointerInfo: PointerInfo) => {
     this.movementVector.copyFrom(Vector3.Zero());
+
+    const x = pointerInfo.event.clientX;
+    const y = pointerInfo.event.clientY;
 
     const directionVectorX = -Math.cos(this.camera.alpha);
     const directionVectorZ = -Math.sin(this.camera.alpha);
 
-    if (y <= WINDOW_PADDING_PX) {
+    if (y <= CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
         new Vector3(directionVectorX, 0, directionVectorZ),
       );
     }
 
-    if (y >= window.innerHeight - WINDOW_PADDING_PX) {
+    if (y >= this.canvas.height - CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
         new Vector3(-directionVectorX, 0, -directionVectorZ),
       );
     }
 
-    if (x <= WINDOW_PADDING_PX) {
+    if (x <= CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
         new Vector3(-directionVectorZ, 0, directionVectorX),
       );
     }
 
-    if (x >= window.innerWidth - WINDOW_PADDING_PX) {
+    if (x >= this.canvas.width - CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
         new Vector3(directionVectorZ, 0, -directionVectorX),
       );
