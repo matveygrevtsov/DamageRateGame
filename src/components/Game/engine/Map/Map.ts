@@ -6,8 +6,10 @@ import {
   StandardMaterial,
   Texture,
   Color3,
+  DynamicTexture,
 } from "@babylonjs/core";
 import { IMapConfig } from "../../../../types";
+import { CELL_RESOLUTION_PX } from "./constants";
 
 interface IProps {
   config: IMapConfig;
@@ -21,8 +23,15 @@ export class Map {
   constructor({ config, scene }: IProps) {
     this.config = config;
     this.scene = scene;
-    this.createGround();
     this.createLight();
+    this.createGround();
+  }
+
+  private createLight() {
+    const { scene } = this;
+    const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
+    light.intensity = 0.7;
+    return light;
   }
 
   private createGround() {
@@ -33,29 +42,52 @@ export class Map {
     const ground = MeshBuilder.CreateGround(
       "ground",
       { width: sizeX, height: sizeZ },
-      scene,
+      scene
     );
-    const material = new StandardMaterial("groundMaterial", scene);
-
-    const texture = new Texture(
-      "https://playground.babylonjs.com/textures/grass.png",
-      scene,
-    );
-    texture.uScale = sizeX / 3; // Количество повторений по оси U
-    texture.vScale = sizeZ / 3; // Количество повторений по оси V
-
-    material.diffuseTexture = texture;
-    material.roughness = 1;
-    material.diffuseColor = new Color3(1.5, 1.5, 1.5); // Увеличивает яркость текстуры
-    ground.material = material;
-
+    ground.material = this.createGroundMaterial();
     return ground;
   }
 
-  private createLight() {
-    const { scene } = this;
-    const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-    light.intensity = 0.7;
-    return light;
+  private createGroundMaterial() {
+    const {
+      scene,
+      config: { sizeX, sizeZ },
+    } = this;
+    const material = new StandardMaterial("material", scene);
+    const dynamicTexture = new DynamicTexture(
+      "dynamicTexture",
+      {
+        width: 9 * CELL_RESOLUTION_PX,
+        height: 18 * CELL_RESOLUTION_PX,
+      },
+      scene
+    );
+    const canvasRenderingContext = dynamicTexture.getContext();
+
+    // Загружаем первую текстуру
+    const img = new Image();
+    img.src = "assets/grass.png";
+    img.onload = function () {
+      try {
+        for (let x = 0; x < sizeX; x++) {
+          for (let z = 0; z < sizeZ; z++) {
+            canvasRenderingContext.drawImage(
+              this,
+              CELL_RESOLUTION_PX * x,
+              CELL_RESOLUTION_PX * z,
+              CELL_RESOLUTION_PX,
+              CELL_RESOLUTION_PX
+            );
+          }
+        }
+
+        dynamicTexture.update();
+      } catch (error) {}
+    };
+
+    material.diffuseTexture = dynamicTexture;
+    material.diffuseColor = new Color3(1.5, 1.5, 1.5); // Увеличиваем яркость
+
+    return material;
   }
 }
