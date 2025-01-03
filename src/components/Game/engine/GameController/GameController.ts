@@ -1,12 +1,7 @@
-import {
-  Engine,
-  HemisphericLight,
-  MeshBuilder,
-  Scene,
-  Vector3,
-} from "@babylonjs/core";
-import { GROUND_HEIGHT, GROUND_WIDTH } from "./constants";
+import { Engine, Scene } from "@babylonjs/core";
 import { Camera } from "../Camera/Camera";
+import { MAP_CONFIG } from "./constants";
+import { Map } from "../Map/Map";
 
 interface IProps {
   canvas: HTMLCanvasElement;
@@ -21,13 +16,12 @@ export class GameController {
     this.canvas = canvas;
     this.engine = this.createEngine();
     this.scene = new Scene(this.engine);
-    new Camera({ canvas, scene: this.scene });
+    this.createMap();
+    this.createCamera();
   }
 
   public start() {
     window.addEventListener("resize", this.resize);
-    this.fillScene();
-    this.initLight();
     this.engine.runRenderLoop(this.render);
   }
 
@@ -47,25 +41,24 @@ export class GameController {
     return engine;
   }
 
-  private fillScene() {
-    this.initGround();
+  private createMap() {
+    const { scene } = this;
+    const map = new Map({
+      config: MAP_CONFIG,
+      scene,
+    });
+    return map;
   }
 
-  private initGround() {
-    MeshBuilder.CreateGround(
-      "ground",
-      { width: GROUND_WIDTH, height: GROUND_HEIGHT },
-      this.scene,
-    );
-  }
-
-  private initLight() {
-    const light = new HemisphericLight(
-      "light",
-      new Vector3(0, 1, 0),
-      this.scene,
-    );
-    light.intensity = 0.7;
+  private createCamera() {
+    const { canvas, scene } = this;
+    const camera = new Camera({
+      canvas,
+      scene,
+      groundSizeX: MAP_CONFIG.sizeX,
+      groundSizeZ: MAP_CONFIG.sizeZ,
+    });
+    return camera;
   }
 
   render = () => this.scene.render();
