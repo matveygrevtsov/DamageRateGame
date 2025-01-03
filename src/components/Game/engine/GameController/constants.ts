@@ -1,6 +1,6 @@
 import { IMapConfig } from "../../../../types";
 
 export const MAP_CONFIG: IMapConfig = {
-  sizeX: 10,
-  sizeZ: 15,
+  sizeX: 40,
+  sizeZ: 90,
 };
