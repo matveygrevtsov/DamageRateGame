@@ -21,16 +21,19 @@ import {
   ROTATION_ANIMATION_DURATION_MS,
   ALPHA_DELTA,
 } from "./constants";
-import { GROUND_HEIGHT, GROUND_WIDTH } from "../GameController/constants";
 
 interface IProps {
   canvas: HTMLCanvasElement;
   scene: Scene;
+  groundSizeX: number;
+  groundSizeZ: number;
 }
 
 export class Camera {
   private readonly camera: ArcRotateCamera;
   private readonly canvas: HTMLCanvasElement;
+  private readonly groundSizeX: number;
+  private readonly groundSizeZ: number;
   private readonly scene: Scene;
   private readonly target: Mesh;
   private readonly movementVector: Vector3;
@@ -39,9 +42,11 @@ export class Camera {
   private rotationGradationIndex: number;
   private rotationAnimationStartTimeMs?: number;
 
-  constructor({ canvas, scene }: IProps) {
+  constructor({ canvas, scene, groundSizeX, groundSizeZ }: IProps) {
     this.canvas = canvas;
     this.scene = scene;
+    this.groundSizeX = groundSizeX;
+    this.groundSizeZ = groundSizeZ;
     this.rotationGradationIndex = 0;
     this.camera = this.createCamera();
     this.target = this.createTarget();
@@ -59,7 +64,7 @@ export class Camera {
       BETA_ROTATION_ANGLE,
       DEFAULT_RADIUS,
       Vector3.Zero(),
-      scene,
+      scene
     );
     camera.attachControl(canvas, true);
     camera.lowerRadiusLimit = MIN_RADIUS;
@@ -97,25 +102,25 @@ export class Camera {
 
     if (mouseY <= CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(directionVectorX, 0, directionVectorZ),
+        new Vector3(directionVectorX, 0, directionVectorZ)
       );
     }
 
     if (mouseY >= this.canvas.height - CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(-directionVectorX, 0, -directionVectorZ),
+        new Vector3(-directionVectorX, 0, -directionVectorZ)
       );
     }
 
     if (mouseX <= CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(-directionVectorZ, 0, directionVectorX),
+        new Vector3(-directionVectorZ, 0, directionVectorX)
       );
     }
 
     if (mouseX >= this.canvas.width - CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(directionVectorZ, 0, -directionVectorX),
+        new Vector3(directionVectorZ, 0, -directionVectorX)
       );
     }
 
@@ -123,13 +128,13 @@ export class Camera {
   }
 
   private refreshTargetPositionByMovementVector() {
-    const { scene, target, movementVector } = this;
+    const { scene, target, movementVector, groundSizeX, groundSizeZ } = this;
     if (!movementVector.length() || !scene.deltaTime) {
       return;
     }
     const speed = (scene.deltaTime / 1000) * 4;
-    const groundHalfWidth = GROUND_WIDTH / 2;
-    const groundHalfHeight = GROUND_HEIGHT / 2;
+    const groundHalfWidth = groundSizeX / 2;
+    const groundHalfHeight = groundSizeZ / 2;
     target.position.addInPlace(movementVector.scale(speed));
 
     if (target.position.x > groundHalfWidth) {

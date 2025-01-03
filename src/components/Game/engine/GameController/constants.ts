@@ -1,2 +1,6 @@
-export const GROUND_WIDTH = 8; // X
-export const GROUND_HEIGHT = 15; // Z
+import { IMapConfig } from "../../../../types";
+
+export const MAP_CONFIG: IMapConfig = {
+  sizeX: 10,
+  sizeZ: 15,
+};
