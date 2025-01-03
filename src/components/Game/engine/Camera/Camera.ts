@@ -64,7 +64,7 @@ export class Camera {
       BETA_ROTATION_ANGLE,
       DEFAULT_RADIUS,
       Vector3.Zero(),
-      scene
+      scene,
     );
     camera.attachControl(canvas, true);
     camera.lowerRadiusLimit = MIN_RADIUS;
@@ -102,25 +102,25 @@ export class Camera {
 
     if (mouseY <= CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(directionVectorX, 0, directionVectorZ)
+        new Vector3(directionVectorX, 0, directionVectorZ),
       );
     }
 
     if (mouseY >= this.canvas.height - CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(-directionVectorX, 0, -directionVectorZ)
+        new Vector3(-directionVectorX, 0, -directionVectorZ),
       );
     }
 
     if (mouseX <= CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(-directionVectorZ, 0, directionVectorX)
+        new Vector3(-directionVectorZ, 0, directionVectorX),
       );
     }
 
     if (mouseX >= this.canvas.width - CANVAS_PADDING_PX) {
       this.movementVector.addInPlace(
-        new Vector3(directionVectorZ, 0, -directionVectorX)
+        new Vector3(directionVectorZ, 0, -directionVectorX),
       );
     }
 
